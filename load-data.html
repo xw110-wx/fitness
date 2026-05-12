@@ -6,21 +6,13 @@
 <body>
 <div>
   <div style="font-size:48px;margin-bottom:16px;">⏳</div>
-  <div style="font-size:18px;font-weight:600;margin-bottom:8px;">正在导入你的健身数据...</div>
+  <div style="font-size:18px;font-weight:600;margin-bottom:8px;">正在加载你的健身数据...</div>
   <div style="font-size:14px;color:#64748b;">页面将自动跳转</div>
 </div>
 <script>
-fetch('seed-data.json')
-  .then(r => r.json())
-  .then(d => {
-    localStorage.setItem('fitness_tracker_data', JSON.stringify(d));
-    localStorage.removeItem('FITNESS_SEED');
-    window.location.href = 'index.html';
-  })
-  .catch(() => {
-    // fallback: try embedded data
-    document.body.innerHTML = '<div>加载失败，请确保 seed-data.json 文件存在</div>';
-  });
+// Clear any stale empty data, index.html will load seed data on fresh start
+localStorage.removeItem('fitness_tracker_data');
+window.location.href = 'index.html';
 </script>
 </body>
 </html>
