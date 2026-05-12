@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="manifest" href="manifest.json">
-<title>健身记录</title>
+<title>随记</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -193,25 +193,22 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 <body>
 <div class="app" id="app">
   <header class="header">
-    <h1>🏋️ 健身记录</h1>
+    <h1>📝 随记</h1>
     <span class="date-badge" id="headerDate"></span>
   </header>
   <div class="main" id="mainContent">
     <!-- Page: Dashboard -->
     <div class="tab-page active" id="pageHome">
-      <div class="stats-grid" id="dashStats"></div>
-      <div class="card" id="dashProgressCard" style="display:none;">
-        <div class="card-title">📈 整体进度</div>
-        <div id="dashProgress"></div>
+      <div class="card" id="dashCombinedCard">
+        <div id="dashCombined"></div>
       </div>
-      <div class="card">
-        <div class="card-title">📊 本周概览</div>
-        <div id="dashWeekSummary"></div>
+      <div class="card" id="dashWorkoutCard">
+        <div class="card-title">🏋️ 下次训练建议</div>
+        <div id="dashNextWorkout"></div>
       </div>
-      
-      <div class="card" id="dashAssessmentCard" style="display:none;">
-        <div class="card-title">💡 总体评价</div>
-        <div id="dashAssessment" style="font-size:14px;line-height:1.8;color:var(--text);"></div>
+      <div class="card" id="dashPlanCard">
+        <div class="card-title">📋 接下来三天计划</div>
+        <div id="dashPlan"></div>
       </div>
       <div class="card">
         <div class="card-title">⚡ 快捷操作</div>
@@ -302,6 +299,14 @@ textarea.form-input { resize: vertical; min-height: 60px; }
             <input class="form-input" type="number" id="goalExercise" min="1" max="7" onchange="saveGoal()">
           </div>
         </div>
+        <div class="form-group">
+          <label class="form-label">训练方向</label>
+          <select class="form-select" id="goalDirection" onchange="saveGoal()">
+            <option value="减脂">减脂</option>
+            <option value="增肌">增肌</option>
+            <option value="保持">保持</option>
+          </select>
+        </div>
       </div>
       <div class="card">
         <div class="card-title">💾 数据管理</div>
@@ -312,6 +317,20 @@ textarea.form-input { resize: vertical; min-height: 60px; }
           <button class="btn btn-outline btn-sm" onclick="clearAllData()" style="color:var(--danger);">🗑️ 清空数据</button>
         </div>
       </div>
+    <!-- Page: Recipe -->
+    <div class="tab-page" id="pageRecipe">
+      <div class="card">
+        <div class="card-title">🥗 菜谱推荐</div>
+        <div class="meal-tabs" id="recipeTypeFilter">
+          <button class="meal-tab active" onclick="filterRecipe('all')">全部</button>
+          <button class="meal-tab" onclick="filterRecipe('breakfast')">🌅 早餐</button>
+          <button class="meal-tab" onclick="filterRecipe('lunch')">☀️ 午餐</button>
+          <button class="meal-tab" onclick="filterRecipe('dinner')">🌙 晚餐</button>
+          <button class="meal-tab" onclick="filterRecipe('snack')">🍪 加餐</button>
+        </div>
+        <div class="btn-group mb-8" id="recipeTagFilter"></div>
+        <div id="recipeList"></div>
+      </div>
     </div>
   </div>
   <nav class="nav" id="bottomNav">
@@ -320,6 +339,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
     <button class="nav-item" data-tab="2"><span class="nav-icon">🍚</span>饮食</button>
     <button class="nav-item" data-tab="3"><span class="nav-icon">🏃</span>运动</button>
     <button class="nav-item" data-tab="4"><span class="nav-icon">📊</span>更多</button>
+    <button class="nav-item" data-tab="5"><span class="nav-icon">🥗</span>菜谱</button>
   </nav>
 </div>
 
@@ -472,7 +492,7 @@ function defaultData() {
   if (d) {
     try { var p = JSON.parse(d); if (p.weight && p.weight.length) return {goals:{targetWeight:'',dailyCalories:2000,weeklyExercise:3},weight:[],measurements:[],meals:[],exercises:[]}; } catch(e){}
   }
-  return {"goals":{"targetWeight":75,"dailyCalories":2000,"weeklyExercise":5},"weight":[{"date":"2026-02-23","value":124.6,"note":"初始体重"},{"date":"2026-02-26","value":122,"note":"体脂22.1%"},{"date":"2026-03-06","value":119.2,"note":""},{"date":"2026-03-07","value":118.5,"note":""},{"date":"2026-03-08","value":117.9,"note":""},{"date":"2026-03-09","value":118.1,"note":""},{"date":"2026-03-10","value":117.7,"note":""},{"date":"2026-03-11","value":118.5,"note":""},{"date":"2026-03-12","value":117.6,"note":""},{"date":"2026-03-13","value":117.7,"note":""},{"date":"2026-03-14","value":117.7,"note":""},{"date":"2026-03-15","value":117.8,"note":""},{"date":"2026-03-16","value":117.5,"note":"腰围81"},{"date":"2026-03-17","value":117.7,"note":""},{"date":"2026-03-18","value":116.9,"note":"腰围79.8"},{"date":"2026-03-19","value":116.7,"note":""},{"date":"2026-03-20","value":117.5,"note":""},{"date":"2026-03-21","value":116.8,"note":""},{"date":"2026-03-22","value":116.4,"note":""},{"date":"2026-03-23","value":116.2,"note":"腰围78.5"},{"date":"2026-03-24","value":116.5,"note":""},{"date":"2026-03-25","value":115.6,"note":""},{"date":"2026-03-26","value":115.1,"note":"腰围77.5"},{"date":"2026-03-27","value":115.3,"note":"腰围77"},{"date":"2026-03-28","value":114.6,"note":""},{"date":"2026-03-29","value":114.7,"note":""},{"date":"2026-03-30","value":115,"note":""},{"date":"2026-03-31","value":114.8,"note":""},{"date":"2026-04-01","value":114.5,"note":""},{"date":"2026-04-02","value":114.6,"note":""},{"date":"2026-04-03","value":114.5,"note":""},{"date":"2026-04-04","value":115,"note":"晚上喝酒"},{"date":"2026-04-05","value":116.2,"note":""},{"date":"2026-04-06","value":115.4,"note":""},{"date":"2026-04-07","value":115.3,"note":"腰围76.5"},{"date":"2026-04-08","value":114.9,"note":"腰围76"},{"date":"2026-04-09","value":114.1,"note":"体脂17.9%"},{"date":"2026-04-10","value":113.4,"note":"腰围75"},{"date":"2026-04-11","value":113.2,"note":""},{"date":"2026-04-14","value":112.9,"note":""},{"date":"2026-04-15","value":112.9,"note":""},{"date":"2026-04-16","value":112.8,"note":""},{"date":"2026-04-17","value":112.9,"note":"晚上喝酒喝醉"},{"date":"2026-04-18","value":112.9,"note":""},{"date":"2026-04-19","value":114.1,"note":""},{"date":"2026-04-20","value":113.7,"note":""},{"date":"2026-04-21","value":113.3,"note":"晚上喝一瓶半啤酒"},{"date":"2026-04-22","value":113.1,"note":""},{"date":"2026-04-23","value":113,"note":""},{"date":"2026-04-24","value":113,"note":""},{"date":"2026-04-25","value":112.7,"note":""},{"date":"2026-04-26","value":112.7,"note":""},{"date":"2026-04-27","value":112.1,"note":"腰围73.3 晚上喝酒2两"},{"date":"2026-04-28","value":112.2,"note":""},{"date":"2026-04-29","value":112.4,"note":""},{"date":"2026-04-30","value":112.4,"note":""},{"date":"2026-05-01","value":112.1,"note":""},{"date":"2026-05-02","value":111.7,"note":"喝酒"},{"date":"2026-05-03","value":112.4,"note":""},{"date":"2026-05-04","value":112.4,"note":""},{"date":"2026-05-05","value":111.9,"note":"状态一般"},{"date":"2026-05-06","value":111.9,"note":""},{"date":"2026-05-07","value":111.7,"note":""},{"date":"2026-05-08","value":111.4,"note":""},{"date":"2026-05-09","value":111.1,"note":""},{"date":"2026-05-10","value":110.4,"note":"腰围72"},{"date":"2026-05-12","value":109.7,"note":"体脂15%"}],"measurements":[{"date":"2026-03-16","waist":81,"note":"首次量腰围"},{"date":"2026-03-18","waist":79.8,"note":""},{"date":"2026-03-23","waist":78.5,"note":""},{"date":"2026-03-26","waist":77.5,"note":""},{"date":"2026-03-27","waist":77,"note":""},{"date":"2026-04-07","waist":76.5,"note":""},{"date":"2026-04-08","waist":76,"note":""},{"date":"2026-04-10","waist":75,"note":""},{"date":"2026-04-27","waist":73.3,"note":""},{"date":"2026-05-10","waist":72,"note":""}],"meals":[{"date":"2026-04-04","type":"dinner","foods":[{"name":"喝酒","calories":500,"protein":0,"carbs":15,"fat":0}],"totalCal":500,"totalProtein":0,"totalCarbs":15,"totalFat":0,"note":"晚上喝酒"},{"date":"2026-04-05","type":"dinner","foods":[{"name":"喝酒","calories":500,"protein":0,"carbs":15,"fat":0}],"totalCal":500,"totalProtein":0,"totalCarbs":15,"totalFat":0,"note":""},{"date":"2026-04-17","type":"dinner","foods":[{"name":"喝酒喝醉","calories":800,"protein":0,"carbs":30,"fat":0}],"totalCal":800,"totalProtein":0,"totalCarbs":30,"totalFat":0,"note":"喝醉了"},{"date":"2026-04-21","type":"dinner","foods":[{"name":"啤酒","calories":450,"protein":0,"carbs":35,"fat":0}],"totalCal":450,"totalProtein":0,"totalCarbs":35,"totalFat":0,"note":"一瓶半啤酒"},{"date":"2026-04-27","type":"dinner","foods":[{"name":"喝酒","calories":300,"protein":0,"carbs":10,"fat":0}],"totalCal":300,"totalProtein":0,"totalCarbs":10,"totalFat":0,"note":"2两白酒"},{"date":"2026-05-02","type":"dinner","foods":[{"name":"喝酒","calories":500,"protein":0,"carbs":15,"fat":0}],"totalCal":500,"totalProtein":0,"totalCarbs":15,"totalFat":0,"note":""}],"exercises":[{"date":"2026-03-01","type":"力量训练","name":"腿部训练","duration":60,"calories":360,"note":"腿弯举50kg 12×6\n内收40kg 15×4\n髋外展50kg 12×4\n哈克深蹲40kg 10×4\n正向哈克深蹲40kg 7×4"},{"date":"2026-03-01","type":"跑步","name":"爬坡","duration":12,"calories":80,"note":""},{"date":"2026-03-02","type":"力量训练","name":"背部+二头","duration":55,"calories":330,"note":"引体35kg辅助 4×8\n坐姿划船20kg 4×12\n直臂下压15kg 4×12\n高位下拉20kg 4×12\n哑铃交替弯举8kg 3×10\n杠铃弯举15kg 4×8\n绳索弯举15kg 2×15"},{"date":"2026-03-03","type":"力量训练","name":"胸部+肩部","duration":55,"calories":330,"note":"热身10分钟\n分动胸部推举50kg 4×10\n上斜推胸单边15kg 3×10\n肩部推举机20kg 4×10\n飞鸟训练器20kg 4×10\n绳索下拉20kg 4×10"},{"date":"2026-03-05","type":"力量训练","name":"腿部训练","duration":55,"calories":330,"note":"热身爬坡5分钟\n腿弯举50kg 10×6\n倒蹲60kg 10×4\n史密斯深蹲80kg 4×8\n内收40kg 15×3\n髋外展50kg 10×3"},{"date":"2026-03-05","type":"跑步","name":"热身爬坡","duration":5,"calories":30,"note":""},{"date":"2026-03-06","type":"力量训练","name":"背部+二头","duration":55,"calories":330,"note":"引体35kg辅助 4×8\n坐姿划船20kg 4×12\n高位下拉20kg 4×12\n哑铃交替弯举8kg 3×10\n杠铃弯举15kg 4×10\n绳索弯举15kg 3×12"},{"date":"2026-03-07","type":"力量训练","name":"腿部训练","duration":55,"calories":330,"note":"热身爬坡18坡度3.5速5分钟\n倒蹬70kg 8×4\n哈克深蹲40kg 8×4\n俯身后蹬左脚25kg 8×3\n俯身后蹬右脚25kg 8×3\n腿弯举50kg 8×3\n髋外展50kg 10×3"},{"date":"2026-03-09","type":"力量训练","name":"胸部+肩部","duration":60,"calories":360,"note":"热身10分钟\n分动胸部推举50kg 4×10\n上斜推胸单边15kg 3×10\n肩部推举机25kg 4×10\n飞鸟训练器20kg 4×10\n绳索下拉20kg 4×8\n面拉15kg 4×10"},{"date":"2026-03-10","type":"力量训练","name":"背部+二头","duration":50,"calories":300,"note":"热身8分钟\n引体35kg辅助 4×8\n坐姿划船20kg 4×12\n高位下拉20kg 4×12\n哑铃交替弯举8kg 4×8\n杠铃弯举15kg 3×8\n绳索弯举15kg 4×12"},{"date":"2026-03-12","type":"力量训练","name":"腿部训练","duration":55,"calories":330,"note":"热身爬坡6分钟\n腿屈伸50kg 4×10\n腿弯举50kg 4×10\n倒蹬50kg 8×4\n俯身后蹬左脚25kg 8×2\n俯身后蹬右脚25kg 8×1\n髋外展40kg 8×4\n髋内收30kg 8×4"},{"date":"2026-03-12","type":"跑步","name":"热身爬坡","duration":6,"calories":35,"note":""},{"date":"2026-03-13","type":"力量训练","name":"胸部+肩部","duration":65,"calories":390,"note":"热身5分钟\n分动胸部推举50kg 4×8\n上斜推胸单边15kg 4×10\n飞鸟训练器20kg 3×10\n面拉15kg 4×15\n八点半补充：哑铃飞鸟5kg 15×6\n俯卧撑12×3"},{"date":"2026-03-15","type":"力量训练","name":"背部+二头","duration":60,"calories":360,"note":"热身10分钟\n引体35kg辅助 12+10+8+8\n坐姿划船20kg 15×6\n高位下拉20kg 4×12\n哑铃交替弯举8kg 4×8\n杠铃弯举15kg 3×8\n绳索弯举15kg 12+12+10\n面拉10kg 20+15+12+10"},{"date":"2026-03-16","type":"力量训练","name":"腿部训练","duration":55,"calories":330,"note":"热身爬坡6分钟\n腿屈伸50kg 4×8\n腿弯举50kg 4×10\n倒蹬60kg 4×8\n哈克深蹲40kg 4×8\n髋外展40kg 4×12\n髋内收30kg 10+10+10+7"},{"date":"2026-03-16","type":"跑步","name":"热身爬坡","duration":6,"calories":35,"note":""},{"date":"2026-03-18","type":"力量训练","name":"胸部+肩部","duration":60,"calories":360,"note":"热身10分钟\n分动胸部推举机50kg 12+10+8\n分动胸部推举机40kg 10+10+15\n上斜推胸单边12.5kg 3×10\n肩部推举机25kg 4×10\n飞鸟训练器20kg 15+12+10+10\n绳索下拉20kg 15+10+6+6\n面拉15kg 4×15"},{"date":"2026-03-20","type":"力量训练","name":"背部+二头","duration":55,"calories":330,"note":"热身10分钟\n引体35kg辅助 15+12+8+8\n坐姿划船20kg 15×4\n高位下拉20kg 4×15\n哑铃交替弯举8kg 3×8\n绳索弯举15kg 15+15+12+12\n面拉15kg 15×3"},{"date":"2026-03-21","type":"力量训练","name":"腿部训练","duration":50,"calories":300,"note":"爬坡热身5分钟\n倒蹬50kg 10×4\n腿弯举50kg 8×4\n腿屈伸50kg 8×4\n髋外展40kg 10×4\n髋内收30kg 10×4\n哈克深蹲50kg 8×3"},{"date":"2026-03-22","type":"力量训练","name":"胸部+肩部","duration":55,"calories":330,"note":"热身5分钟\n分动胸部推举机50kg 10×4\n上斜推胸单边12.5kg 4×10\n肩部推举机25kg 15+15+12+10\n飞鸟训练器20kg 15+12+10+10\n绳索下拉20kg 8×4\n面拉15kg 4×15"},{"date":"2026-03-25","type":"力量训练","name":"背部","duration":45,"calories":270,"note":"热身4分钟\n坐姿划船20kg 15×4\n引体35kg辅助 8×4\n高位下拉20kg 4×15\n绳索弯举15kg 15×3\n面拉15kg 15×3"},{"date":"2026-03-26","type":"力量训练","name":"腿部训练","duration":40,"calories":240,"note":"爬坡热身5分钟\n腿弯举50kg 10×4\n哈克深蹲50kg 8×4\n髋外展45kg 12×2"},{"date":"2026-03-26","type":"跑步","name":"热身爬坡","duration":5,"calories":30,"note":""},{"date":"2026-03-27","type":"力量训练","name":"胸部+肩部","duration":50,"calories":300,"note":"热身5分钟\n分动胸部推举机50kg 10×4\n上斜推胸单边12.5kg 3×10\n飞鸟训练器20kg 10×3\n绳索下拉20kg 8×3\n面拉15kg 3×15"},{"date":"2026-03-30","type":"力量训练","name":"背部+二头","duration":50,"calories":300,"note":"热身5分钟\n引体35kg辅助 8×3\n坐姿划船25kg 12×4\n高位下拉20kg 4×15\n哑铃交替弯举8kg 8+7+6\n绳索弯举15kg 12×3\n面拉15kg 15×3"},{"date":"2026-03-31","type":"力量训练","name":"腿部训练","duration":50,"calories":300,"note":"热身5分钟\n哈克深蹲55kg 10×4\n腿弯举45kg 10×4\n腿屈伸50kg 10×3\n髋外展45kg 12×3\n髋内收30kg 12×3"},{"date":"2026-04-02","type":"力量训练","name":"胸部+肩部","duration":50,"calories":300,"note":"热身5分钟\n分动胸部推举机50kg 10×4\n站姿飞鸟夹胸45kg 8×4\n上斜推胸单边15kg 3×10\n飞鸟训练器20kg 10×4\n面拉15kg 10×4"},{"date":"2026-04-04","type":"力量训练","name":"背部+腹肌","duration":60,"calories":360,"note":"热身5分钟\n引体35kg辅助 8×4\n窄距坐姿划船25kg 12×4\n高位下拉20kg 3×12\n宽距坐姿划船25kg 12×4\n面拉15kg 15×3\n反向山羊挺身静止25s×4\n龙门架磕头卷腹20kg 15×3\n晚上喝酒"},{"date":"2026-04-05","type":"力量训练","name":"腿部训练","duration":50,"calories":300,"note":"热身7分钟\n哈克深蹲50kg 8×4\n倒蹬60kg 10×4\n腿弯举50kg 10×4\n腿屈伸50kg 12×3\n俯身后蹬25kg 8×3"},{"date":"2026-04-05","type":"跑步","name":"爬坡","duration":10,"calories":65,"note":""},{"date":"2026-04-08","type":"力量训练","name":"胸部+肩部","duration":55,"calories":330,"note":"热身5分钟\n分动胸部推举机50kg 10×4\n上斜推胸单边12.5kg 4×10\n蝴蝶机夹胸30kg 8×3\n飞鸟训练器20kg 10×4\n肩部推举机25kg 10×3\n面拉15kg 3×15"},{"date":"2026-04-09","type":"力量训练","name":"背部+二头+有氧","duration":50,"calories":300,"note":"热身5分钟\n引体35kg辅助 8×4\n高位下拉20kg 3×12\n面拉15kg 15×3\n窄距坐姿划船25kg 12×3\n宽距坐姿划船25kg 12×3\n哑铃弯举8kg 3×10"},{"date":"2026-04-09","type":"跑步","name":"爬坡","duration":10,"calories":65,"note":""},{"date":"2026-04-11","type":"力量训练","name":"腿部训练","duration":50,"calories":300,"note":"热身5分钟\n哈克深蹲50kg 10×4\n倒蹬65kg 8×4\n腿弯举50kg 10×4\n腿屈伸50kg 12×3\n髋外展40kg 12×2\n髋内收30kg 8×3"},{"date":"2026-04-14","type":"力量训练","name":"胸部+肩部","duration":55,"calories":330,"note":"热身5分钟\n分动胸部推举机55kg 8×4\n上斜推胸单边12.5kg 4×10\n蝴蝶机夹胸30kg 12×3\n飞鸟训练器20kg 12×3\n肩部推举机25kg 10×3\n面拉20kg 3×12"},{"date":"2026-04-14","type":"跑步","name":"爬坡","duration":10,"calories":65,"note":""},{"date":"2026-04-15","type":"力量训练","name":"背部+二头","duration":50,"calories":300,"note":"热身6分钟\n窄距划船25kg 12×4\n宽距划船25kg 12×4\n引体向上12×2\n哑铃弯举8kg 12+10+8"},{"date":"2026-04-15","type":"跑步","name":"爬坡","duration":10,"calories":65,"note":""},{"date":"2026-04-17","type":"力量训练","name":"腿部训练","duration":45,"calories":270,"note":"热身爬坡10分钟\n哈克深蹲60kg 8×3\n倒蹬65kg 8×3\n腿弯举50kg 8×3\n腿屈伸50kg 8×3\n晚上喝酒喝醉"},{"date":"2026-04-17","type":"跑步","name":"热身爬坡","duration":10,"calories":65,"note":""},{"date":"2026-04-20","type":"力量训练","name":"背部+二头","duration":55,"calories":330,"note":"爬坡10分钟\n引体35kg辅助 10×4\n坐姿窄距划船25kg 10×4\n坐姿宽距划船25kg 10×4\n高位下拉25kg 12×4\n面拉15kg 12×3"},{"date":"2026-04-20","type":"跑步","name":"爬坡","duration":20,"calories":130,"note":""},{"date":"2026-04-22","type":"力量训练","name":"腿部训练","duration":45,"calories":270,"note":"爬坡8分钟\n倒蹬50kg 10×4\n哈克50kg 10×4\n腿弯举50kg 10×3\n腿屈伸50kg 8×4\n内收30kg 10×2\n外展45kg 12×2"},{"date":"2026-04-22","type":"跑步","name":"爬坡","duration":18,"calories":115,"note":""},{"date":"2026-04-25","type":"其他","name":"攀岩","duration":180,"calories":540,"note":"攀岩馆3小时"},{"date":"2026-04-27","type":"力量训练","name":"胸部+肩部","duration":50,"calories":300,"note":"爬坡7分钟\n分动胸部推举机55kg 8×4\n上斜推胸单边12.5kg 4×10\n蝴蝶机夹胸30kg 12×3\n肩部推举机25kg 12×3\n面拉20kg 3×12\n晚上喝酒2两"},{"date":"2026-04-27","type":"跑步","name":"爬坡","duration":17,"calories":110,"note":"含热身"},{"date":"2026-04-29","type":"力量训练","name":"腿部训练","duration":50,"calories":300,"note":"爬坡10分钟\n倒蹬65kg 8×4\n哈克65kg 6×3\n腿屈伸50kg 10×3\n腿弯举50kg 10×3\n俯身后蹬左右25kg 8×2\n外展40kg 12×3"},{"date":"2026-04-29","type":"跑步","name":"热身爬坡","duration":10,"calories":65,"note":""},{"date":"2026-05-04","type":"力量训练","name":"背部+二头","duration":55,"calories":330,"note":"爬坡10分钟\n引体35kg辅助 10×4\n坐姿窄距划船25kg 10×4\n坐姿宽距划船25kg 10×4\n高位下拉25kg 12×4\n绳索下压20kg 10×2\n面拉15kg 12×3\n二头哑铃8kg 8×4"},{"date":"2026-05-04","type":"跑步","name":"爬坡","duration":20,"calories":130,"note":""},{"date":"2026-05-05","type":"力量训练","name":"胸部+肩部","duration":50,"calories":300,"note":"爬坡7分钟\n分动胸部推举机50kg 10×4\n上斜推胸单边12.5kg 4×10\n蝴蝶机夹胸30kg 10×4\n肩部推举机25kg 12×3\n面拉20kg 3×12\n状态一般略疲劳"},{"date":"2026-05-05","type":"跑步","name":"热身爬坡","duration":7,"calories":45,"note":""},{"date":"2026-05-09","type":"力量训练","name":"背部+二头","duration":50,"calories":300,"note":"爬坡12分钟\n引体助力30kg 10×4\n窄距划船30kg 8×3\n宽距划船30kg 8×3\n高位下拉25kg 12×4\n面拉20kg 12×3"},{"date":"2026-05-09","type":"跑步","name":"爬坡","duration":12,"calories":75,"note":""},{"date":"2026-05-10","type":"力量训练","name":"腿部训练","duration":45,"calories":270,"note":"热身5分钟\n倒蹬80kg 10×4\n哈克60kg 10×4\n腿弯举50kg 8×4\n腿屈伸50kg 8×3\n内收50kg 12×3\n外展50kg 10×2"}]};
+  return {"goals":{"targetWeight":75,"dailyCalories":2000,"weeklyExercise":5,"direction":"减脂"},"weight":[{"date":"2026-02-23","value":124.6,"note":"初始体重"},{"date":"2026-02-26","value":122,"note":"体脂22.1%"},{"date":"2026-03-06","value":119.2,"note":""},{"date":"2026-03-07","value":118.5,"note":""},{"date":"2026-03-08","value":117.9,"note":""},{"date":"2026-03-09","value":118.1,"note":""},{"date":"2026-03-10","value":117.7,"note":""},{"date":"2026-03-11","value":118.5,"note":""},{"date":"2026-03-12","value":117.6,"note":""},{"date":"2026-03-13","value":117.7,"note":""},{"date":"2026-03-14","value":117.7,"note":""},{"date":"2026-03-15","value":117.8,"note":""},{"date":"2026-03-16","value":117.5,"note":"腰围81"},{"date":"2026-03-17","value":117.7,"note":""},{"date":"2026-03-18","value":116.9,"note":"腰围79.8"},{"date":"2026-03-19","value":116.7,"note":""},{"date":"2026-03-20","value":117.5,"note":""},{"date":"2026-03-21","value":116.8,"note":""},{"date":"2026-03-22","value":116.4,"note":""},{"date":"2026-03-23","value":116.2,"note":"腰围78.5"},{"date":"2026-03-24","value":116.5,"note":""},{"date":"2026-03-25","value":115.6,"note":""},{"date":"2026-03-26","value":115.1,"note":"腰围77.5"},{"date":"2026-03-27","value":115.3,"note":"腰围77"},{"date":"2026-03-28","value":114.6,"note":""},{"date":"2026-03-29","value":114.7,"note":""},{"date":"2026-03-30","value":115,"note":""},{"date":"2026-03-31","value":114.8,"note":""},{"date":"2026-04-01","value":114.5,"note":""},{"date":"2026-04-02","value":114.6,"note":""},{"date":"2026-04-03","value":114.5,"note":""},{"date":"2026-04-04","value":115,"note":"晚上喝酒"},{"date":"2026-04-05","value":116.2,"note":""},{"date":"2026-04-06","value":115.4,"note":""},{"date":"2026-04-07","value":115.3,"note":"腰围76.5"},{"date":"2026-04-08","value":114.9,"note":"腰围76"},{"date":"2026-04-09","value":114.1,"note":"体脂17.9%"},{"date":"2026-04-10","value":113.4,"note":"腰围75"},{"date":"2026-04-11","value":113.2,"note":""},{"date":"2026-04-14","value":112.9,"note":""},{"date":"2026-04-15","value":112.9,"note":""},{"date":"2026-04-16","value":112.8,"note":""},{"date":"2026-04-17","value":112.9,"note":"晚上喝酒喝醉"},{"date":"2026-04-18","value":112.9,"note":""},{"date":"2026-04-19","value":114.1,"note":""},{"date":"2026-04-20","value":113.7,"note":""},{"date":"2026-04-21","value":113.3,"note":"晚上喝一瓶半啤酒"},{"date":"2026-04-22","value":113.1,"note":""},{"date":"2026-04-23","value":113,"note":""},{"date":"2026-04-24","value":113,"note":""},{"date":"2026-04-25","value":112.7,"note":""},{"date":"2026-04-26","value":112.7,"note":""},{"date":"2026-04-27","value":112.1,"note":"腰围73.3 晚上喝酒2两"},{"date":"2026-04-28","value":112.2,"note":""},{"date":"2026-04-29","value":112.4,"note":""},{"date":"2026-04-30","value":112.4,"note":""},{"date":"2026-05-01","value":112.1,"note":""},{"date":"2026-05-02","value":111.7,"note":"喝酒"},{"date":"2026-05-03","value":112.4,"note":""},{"date":"2026-05-04","value":112.4,"note":""},{"date":"2026-05-05","value":111.9,"note":"状态一般"},{"date":"2026-05-06","value":111.9,"note":""},{"date":"2026-05-07","value":111.7,"note":""},{"date":"2026-05-08","value":111.4,"note":""},{"date":"2026-05-09","value":111.1,"note":""},{"date":"2026-05-10","value":110.4,"note":"腰围72"},{"date":"2026-05-12","value":109.7,"note":"体脂15%"}],"measurements":[{"date":"2026-03-16","waist":81,"note":"首次量腰围"},{"date":"2026-03-18","waist":79.8,"note":""},{"date":"2026-03-23","waist":78.5,"note":""},{"date":"2026-03-26","waist":77.5,"note":""},{"date":"2026-03-27","waist":77,"note":""},{"date":"2026-04-07","waist":76.5,"note":""},{"date":"2026-04-08","waist":76,"note":""},{"date":"2026-04-10","waist":75,"note":""},{"date":"2026-04-27","waist":73.3,"note":""},{"date":"2026-05-10","waist":72,"note":""}],"meals":[{"date":"2026-04-04","type":"dinner","foods":[{"name":"喝酒","calories":500,"protein":0,"carbs":15,"fat":0}],"totalCal":500,"totalProtein":0,"totalCarbs":15,"totalFat":0,"note":"晚上喝酒"},{"date":"2026-04-05","type":"dinner","foods":[{"name":"喝酒","calories":500,"protein":0,"carbs":15,"fat":0}],"totalCal":500,"totalProtein":0,"totalCarbs":15,"totalFat":0,"note":""},{"date":"2026-04-17","type":"dinner","foods":[{"name":"喝酒喝醉","calories":800,"protein":0,"carbs":30,"fat":0}],"totalCal":800,"totalProtein":0,"totalCarbs":30,"totalFat":0,"note":"喝醉了"},{"date":"2026-04-21","type":"dinner","foods":[{"name":"啤酒","calories":450,"protein":0,"carbs":35,"fat":0}],"totalCal":450,"totalProtein":0,"totalCarbs":35,"totalFat":0,"note":"一瓶半啤酒"},{"date":"2026-04-27","type":"dinner","foods":[{"name":"喝酒","calories":300,"protein":0,"carbs":10,"fat":0}],"totalCal":300,"totalProtein":0,"totalCarbs":10,"totalFat":0,"note":"2两白酒"},{"date":"2026-05-02","type":"dinner","foods":[{"name":"喝酒","calories":500,"protein":0,"carbs":15,"fat":0}],"totalCal":500,"totalProtein":0,"totalCarbs":15,"totalFat":0,"note":""}],"exercises":[{"date":"2026-03-01","type":"力量训练","name":"腿部训练","duration":60,"calories":360,"note":"腿弯举50kg 12×6\n内收40kg 15×4\n髋外展50kg 12×4\n哈克深蹲40kg 10×4\n正向哈克深蹲40kg 7×4"},{"date":"2026-03-01","type":"跑步","name":"爬坡","duration":12,"calories":80,"note":""},{"date":"2026-03-02","type":"力量训练","name":"背部+二头","duration":55,"calories":330,"note":"引体35kg辅助 4×8\n坐姿划船20kg 4×12\n直臂下压15kg 4×12\n高位下拉20kg 4×12\n哑铃交替弯举8kg 3×10\n杠铃弯举15kg 4×8\n绳索弯举15kg 2×15"},{"date":"2026-03-03","type":"力量训练","name":"胸部+肩部","duration":55,"calories":330,"note":"热身10分钟\n分动胸部推举50kg 4×10\n上斜推胸单边15kg 3×10\n肩部推举机20kg 4×10\n飞鸟训练器20kg 4×10\n绳索下拉20kg 4×10"},{"date":"2026-03-05","type":"力量训练","name":"腿部训练","duration":55,"calories":330,"note":"热身爬坡5分钟\n腿弯举50kg 10×6\n倒蹲60kg 10×4\n史密斯深蹲80kg 4×8\n内收40kg 15×3\n髋外展50kg 10×3"},{"date":"2026-03-05","type":"跑步","name":"热身爬坡","duration":5,"calories":30,"note":""},{"date":"2026-03-06","type":"力量训练","name":"背部+二头","duration":55,"calories":330,"note":"引体35kg辅助 4×8\n坐姿划船20kg 4×12\n高位下拉20kg 4×12\n哑铃交替弯举8kg 3×10\n杠铃弯举15kg 4×10\n绳索弯举15kg 3×12"},{"date":"2026-03-07","type":"力量训练","name":"腿部训练","duration":55,"calories":330,"note":"热身爬坡18坡度3.5速5分钟\n倒蹬70kg 8×4\n哈克深蹲40kg 8×4\n俯身后蹬左脚25kg 8×3\n俯身后蹬右脚25kg 8×3\n腿弯举50kg 8×3\n髋外展50kg 10×3"},{"date":"2026-03-09","type":"力量训练","name":"胸部+肩部","duration":60,"calories":360,"note":"热身10分钟\n分动胸部推举50kg 4×10\n上斜推胸单边15kg 3×10\n肩部推举机25kg 4×10\n飞鸟训练器20kg 4×10\n绳索下拉20kg 4×8\n面拉15kg 4×10"},{"date":"2026-03-10","type":"力量训练","name":"背部+二头","duration":50,"calories":300,"note":"热身8分钟\n引体35kg辅助 4×8\n坐姿划船20kg 4×12\n高位下拉20kg 4×12\n哑铃交替弯举8kg 4×8\n杠铃弯举15kg 3×8\n绳索弯举15kg 4×12"},{"date":"2026-03-12","type":"力量训练","name":"腿部训练","duration":55,"calories":330,"note":"热身爬坡6分钟\n腿屈伸50kg 4×10\n腿弯举50kg 4×10\n倒蹬50kg 8×4\n俯身后蹬左脚25kg 8×2\n俯身后蹬右脚25kg 8×1\n髋外展40kg 8×4\n髋内收30kg 8×4"},{"date":"2026-03-12","type":"跑步","name":"热身爬坡","duration":6,"calories":35,"note":""},{"date":"2026-03-13","type":"力量训练","name":"胸部+肩部","duration":65,"calories":390,"note":"热身5分钟\n分动胸部推举50kg 4×8\n上斜推胸单边15kg 4×10\n飞鸟训练器20kg 3×10\n面拉15kg 4×15\n八点半补充：哑铃飞鸟5kg 15×6\n俯卧撑12×3"},{"date":"2026-03-15","type":"力量训练","name":"背部+二头","duration":60,"calories":360,"note":"热身10分钟\n引体35kg辅助 12+10+8+8\n坐姿划船20kg 15×6\n高位下拉20kg 4×12\n哑铃交替弯举8kg 4×8\n杠铃弯举15kg 3×8\n绳索弯举15kg 12+12+10\n面拉10kg 20+15+12+10"},{"date":"2026-03-16","type":"力量训练","name":"腿部训练","duration":55,"calories":330,"note":"热身爬坡6分钟\n腿屈伸50kg 4×8\n腿弯举50kg 4×10\n倒蹬60kg 4×8\n哈克深蹲40kg 4×8\n髋外展40kg 4×12\n髋内收30kg 10+10+10+7"},{"date":"2026-03-16","type":"跑步","name":"热身爬坡","duration":6,"calories":35,"note":""},{"date":"2026-03-18","type":"力量训练","name":"胸部+肩部","duration":60,"calories":360,"note":"热身10分钟\n分动胸部推举机50kg 12+10+8\n分动胸部推举机40kg 10+10+15\n上斜推胸单边12.5kg 3×10\n肩部推举机25kg 4×10\n飞鸟训练器20kg 15+12+10+10\n绳索下拉20kg 15+10+6+6\n面拉15kg 4×15"},{"date":"2026-03-20","type":"力量训练","name":"背部+二头","duration":55,"calories":330,"note":"热身10分钟\n引体35kg辅助 15+12+8+8\n坐姿划船20kg 15×4\n高位下拉20kg 4×15\n哑铃交替弯举8kg 3×8\n绳索弯举15kg 15+15+12+12\n面拉15kg 15×3"},{"date":"2026-03-21","type":"力量训练","name":"腿部训练","duration":50,"calories":300,"note":"爬坡热身5分钟\n倒蹬50kg 10×4\n腿弯举50kg 8×4\n腿屈伸50kg 8×4\n髋外展40kg 10×4\n髋内收30kg 10×4\n哈克深蹲50kg 8×3"},{"date":"2026-03-22","type":"力量训练","name":"胸部+肩部","duration":55,"calories":330,"note":"热身5分钟\n分动胸部推举机50kg 10×4\n上斜推胸单边12.5kg 4×10\n肩部推举机25kg 15+15+12+10\n飞鸟训练器20kg 15+12+10+10\n绳索下拉20kg 8×4\n面拉15kg 4×15"},{"date":"2026-03-25","type":"力量训练","name":"背部","duration":45,"calories":270,"note":"热身4分钟\n坐姿划船20kg 15×4\n引体35kg辅助 8×4\n高位下拉20kg 4×15\n绳索弯举15kg 15×3\n面拉15kg 15×3"},{"date":"2026-03-26","type":"力量训练","name":"腿部训练","duration":40,"calories":240,"note":"爬坡热身5分钟\n腿弯举50kg 10×4\n哈克深蹲50kg 8×4\n髋外展45kg 12×2"},{"date":"2026-03-26","type":"跑步","name":"热身爬坡","duration":5,"calories":30,"note":""},{"date":"2026-03-27","type":"力量训练","name":"胸部+肩部","duration":50,"calories":300,"note":"热身5分钟\n分动胸部推举机50kg 10×4\n上斜推胸单边12.5kg 3×10\n飞鸟训练器20kg 10×3\n绳索下拉20kg 8×3\n面拉15kg 3×15"},{"date":"2026-03-30","type":"力量训练","name":"背部+二头","duration":50,"calories":300,"note":"热身5分钟\n引体35kg辅助 8×3\n坐姿划船25kg 12×4\n高位下拉20kg 4×15\n哑铃交替弯举8kg 8+7+6\n绳索弯举15kg 12×3\n面拉15kg 15×3"},{"date":"2026-03-31","type":"力量训练","name":"腿部训练","duration":50,"calories":300,"note":"热身5分钟\n哈克深蹲55kg 10×4\n腿弯举45kg 10×4\n腿屈伸50kg 10×3\n髋外展45kg 12×3\n髋内收30kg 12×3"},{"date":"2026-04-02","type":"力量训练","name":"胸部+肩部","duration":50,"calories":300,"note":"热身5分钟\n分动胸部推举机50kg 10×4\n站姿飞鸟夹胸45kg 8×4\n上斜推胸单边15kg 3×10\n飞鸟训练器20kg 10×4\n面拉15kg 10×4"},{"date":"2026-04-04","type":"力量训练","name":"背部+腹肌","duration":60,"calories":360,"note":"热身5分钟\n引体35kg辅助 8×4\n窄距坐姿划船25kg 12×4\n高位下拉20kg 3×12\n宽距坐姿划船25kg 12×4\n面拉15kg 15×3\n反向山羊挺身静止25s×4\n龙门架磕头卷腹20kg 15×3\n晚上喝酒"},{"date":"2026-04-05","type":"力量训练","name":"腿部训练","duration":50,"calories":300,"note":"热身7分钟\n哈克深蹲50kg 8×4\n倒蹬60kg 10×4\n腿弯举50kg 10×4\n腿屈伸50kg 12×3\n俯身后蹬25kg 8×3"},{"date":"2026-04-05","type":"跑步","name":"爬坡","duration":10,"calories":65,"note":""},{"date":"2026-04-08","type":"力量训练","name":"胸部+肩部","duration":55,"calories":330,"note":"热身5分钟\n分动胸部推举机50kg 10×4\n上斜推胸单边12.5kg 4×10\n蝴蝶机夹胸30kg 8×3\n飞鸟训练器20kg 10×4\n肩部推举机25kg 10×3\n面拉15kg 3×15"},{"date":"2026-04-09","type":"力量训练","name":"背部+二头+有氧","duration":50,"calories":300,"note":"热身5分钟\n引体35kg辅助 8×4\n高位下拉20kg 3×12\n面拉15kg 15×3\n窄距坐姿划船25kg 12×3\n宽距坐姿划船25kg 12×3\n哑铃弯举8kg 3×10"},{"date":"2026-04-09","type":"跑步","name":"爬坡","duration":10,"calories":65,"note":""},{"date":"2026-04-11","type":"力量训练","name":"腿部训练","duration":50,"calories":300,"note":"热身5分钟\n哈克深蹲50kg 10×4\n倒蹬65kg 8×4\n腿弯举50kg 10×4\n腿屈伸50kg 12×3\n髋外展40kg 12×2\n髋内收30kg 8×3"},{"date":"2026-04-14","type":"力量训练","name":"胸部+肩部","duration":55,"calories":330,"note":"热身5分钟\n分动胸部推举机55kg 8×4\n上斜推胸单边12.5kg 4×10\n蝴蝶机夹胸30kg 12×3\n飞鸟训练器20kg 12×3\n肩部推举机25kg 10×3\n面拉20kg 3×12"},{"date":"2026-04-14","type":"跑步","name":"爬坡","duration":10,"calories":65,"note":""},{"date":"2026-04-15","type":"力量训练","name":"背部+二头","duration":50,"calories":300,"note":"热身6分钟\n窄距划船25kg 12×4\n宽距划船25kg 12×4\n引体向上12×2\n哑铃弯举8kg 12+10+8"},{"date":"2026-04-15","type":"跑步","name":"爬坡","duration":10,"calories":65,"note":""},{"date":"2026-04-17","type":"力量训练","name":"腿部训练","duration":45,"calories":270,"note":"热身爬坡10分钟\n哈克深蹲60kg 8×3\n倒蹬65kg 8×3\n腿弯举50kg 8×3\n腿屈伸50kg 8×3\n晚上喝酒喝醉"},{"date":"2026-04-17","type":"跑步","name":"热身爬坡","duration":10,"calories":65,"note":""},{"date":"2026-04-20","type":"力量训练","name":"背部+二头","duration":55,"calories":330,"note":"爬坡10分钟\n引体35kg辅助 10×4\n坐姿窄距划船25kg 10×4\n坐姿宽距划船25kg 10×4\n高位下拉25kg 12×4\n面拉15kg 12×3"},{"date":"2026-04-20","type":"跑步","name":"爬坡","duration":20,"calories":130,"note":""},{"date":"2026-04-22","type":"力量训练","name":"腿部训练","duration":45,"calories":270,"note":"爬坡8分钟\n倒蹬50kg 10×4\n哈克50kg 10×4\n腿弯举50kg 10×3\n腿屈伸50kg 8×4\n内收30kg 10×2\n外展45kg 12×2"},{"date":"2026-04-22","type":"跑步","name":"爬坡","duration":18,"calories":115,"note":""},{"date":"2026-04-25","type":"其他","name":"攀岩","duration":180,"calories":540,"note":"攀岩馆3小时"},{"date":"2026-04-27","type":"力量训练","name":"胸部+肩部","duration":50,"calories":300,"note":"爬坡7分钟\n分动胸部推举机55kg 8×4\n上斜推胸单边12.5kg 4×10\n蝴蝶机夹胸30kg 12×3\n肩部推举机25kg 12×3\n面拉20kg 3×12\n晚上喝酒2两"},{"date":"2026-04-27","type":"跑步","name":"爬坡","duration":17,"calories":110,"note":"含热身"},{"date":"2026-04-29","type":"力量训练","name":"腿部训练","duration":50,"calories":300,"note":"爬坡10分钟\n倒蹬65kg 8×4\n哈克65kg 6×3\n腿屈伸50kg 10×3\n腿弯举50kg 10×3\n俯身后蹬左右25kg 8×2\n外展40kg 12×3"},{"date":"2026-04-29","type":"跑步","name":"热身爬坡","duration":10,"calories":65,"note":""},{"date":"2026-05-04","type":"力量训练","name":"背部+二头","duration":55,"calories":330,"note":"爬坡10分钟\n引体35kg辅助 10×4\n坐姿窄距划船25kg 10×4\n坐姿宽距划船25kg 10×4\n高位下拉25kg 12×4\n绳索下压20kg 10×2\n面拉15kg 12×3\n二头哑铃8kg 8×4"},{"date":"2026-05-04","type":"跑步","name":"爬坡","duration":20,"calories":130,"note":""},{"date":"2026-05-05","type":"力量训练","name":"胸部+肩部","duration":50,"calories":300,"note":"爬坡7分钟\n分动胸部推举机50kg 10×4\n上斜推胸单边12.5kg 4×10\n蝴蝶机夹胸30kg 10×4\n肩部推举机25kg 12×3\n面拉20kg 3×12\n状态一般略疲劳"},{"date":"2026-05-05","type":"跑步","name":"热身爬坡","duration":7,"calories":45,"note":""},{"date":"2026-05-09","type":"力量训练","name":"背部+二头","duration":50,"calories":300,"note":"爬坡12分钟\n引体助力30kg 10×4\n窄距划船30kg 8×3\n宽距划船30kg 8×3\n高位下拉25kg 12×4\n面拉20kg 12×3"},{"date":"2026-05-09","type":"跑步","name":"爬坡","duration":12,"calories":75,"note":""},{"date":"2026-05-10","type":"力量训练","name":"腿部训练","duration":45,"calories":270,"note":"热身5分钟\n倒蹬80kg 10×4\n哈克60kg 10×4\n腿弯举50kg 8×4\n腿屈伸50kg 8×3\n内收50kg 12×3\n外展50kg 10×2"}]};
 }
 let data = defaultData();
 let currentTab = 0;
@@ -516,6 +536,7 @@ function switchTab(i) {
   if (i === 2) renderDiet();
   if (i === 3) renderExercise();
   if (i === 4) renderMore();
+  if (i === 5) renderRecipe();
 }
 document.querySelectorAll('.nav-item').forEach(n => n.addEventListener('click', () => switchTab(parseInt(n.dataset.tab))));
 
@@ -542,125 +563,51 @@ function showToast(msg) {
 
 // ============ DASHBOARD ============
 function renderDashboard() {
-  const today = todayStr();
   document.getElementById('headerDate').textContent = `${new Date().getFullYear()}年${new Date().getMonth()+1}月${new Date().getDate()}日`;
-  // Stats
-  const lastWeight = data.weight.length ? data.weight[data.weight.length-1].value : null;
-  const todayMeals = data.meals.filter(m => m.date === today);
-  const todayCals = todayMeals.reduce((s, m) => s + (m.totalCal || 0), 0);
-  const todayEx = data.exercises.filter(e => e.date === today);
-  const todayExCal = todayEx.reduce((s, e) => s + (e.calories || 0), 0);
-  const todayExDur = todayEx.reduce((s, e) => s + (e.duration || 0), 0);
-  const goalW = data.goals.targetWeight;
-  const goalCal = data.goals.dailyCalories;
-
-  document.getElementById('dashStats').innerHTML = `
-    <div class="stat-box"><div class="stat-icon">⚖️</div>
-      <div class="stat-label">当前体重</div>
-      <div class="stat-value">${lastWeight ? lastWeight + '<span class="stat-unit">斤</span>' : '--'}</div>
-      <div class="stat-sub">${goalW ? `目标 ${goalW} 斤 · ${lastWeight ? (lastWeight > goalW ? '还需减 '+(lastWeight-goalW).toFixed(1) : '✅ 已达到') : ''}` : '未设目标'}</div>
-    </div>
-    <div class="stat-box"><div class="stat-icon">🍚</div>
-      <div class="stat-label">今日热量</div>
-      <div class="stat-value">${todayCals}<span class="stat-unit">kcal</span></div>
-      <div class="stat-sub">${goalCal ? `目标 ${goalCal} · ${todayCals > goalCal ? '⚠️ 超标了' : '✅ 控制中'}` : ''}</div>
-    </div>
-    <div class="stat-box"><div class="stat-icon">🏃</div>
-      <div class="stat-label">今日运动</div>
-      <div class="stat-value">${todayExDur}<span class="stat-unit">min</span></div>
-      <div class="stat-sub">${todayExCal ? `消耗 ${todayExCal} kcal` : '暂无记录'}</div>
-    </div>
-    <div class="stat-box"><div class="stat-icon">📏</div>
-      <div class="stat-label">记录天数</div>
-      <div class="stat-value">${data.weight.length}<span class="stat-unit">天</span></div>
-      <div class="stat-sub">体重共 ${data.weight.length} 次记录</div>
-    </div>
-  `;
-  // Week summary
-  renderWeekSummary();
-  // Overall progress
-  renderOverallProgress();
+  renderCombined();
+  renderNextWorkout();
+  renderPlan();
 }
-function renderWeekSummary() {
-  const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate()-7);
-  const ws = weekAgo.toISOString().slice(0,10);
-  const weekMeals = data.meals.filter(m => m.date >= ws);
-  const weekEx = data.exercises.filter(e => e.date >= ws);
-  const weekCals = weekMeals.reduce((s, m) => s + (m.totalCal || 0), 0);
-  const avgCal = weekMeals.length ? Math.round(weekCals / Math.max(1, [...new Set(weekMeals.map(m=>m.date))].length)) : 0;
-  const weekExDays = new Set(weekEx.map(e => e.date)).size;
-  const weekExDur = weekEx.reduce((s, e) => s + (e.duration || 0), 0);
-  const weekExCal = weekEx.reduce((s, e) => s + (e.calories || 0), 0);
-  document.getElementById('dashWeekSummary').innerHTML = `
-    <div style="font-size:13px;line-height:1.8;">
-      近7天 · 日均摄入 <strong>${avgCal}</strong> kcal ·
-      运动 <strong>${weekExDays}</strong> 天 ·
-      总消耗 <strong>${weekExCal}</strong> kcal
-    </div>
-  `;
-}
-
-function renderOverallProgress() {
-  var card = document.getElementById('dashProgressCard');
-  var el = document.getElementById('dashProgress');
-  if (data.weight.length < 2 && data.measurements.length < 2) { card.style.display = 'none'; return; }
-  card.style.display = 'block';
-  var items = [];
-  if (data.weight.length >= 2) {
-    var f = data.weight[0].value, l = data.weight[data.weight.length-1].value, d = l - f;
-    var ds = d < 0 ? '↓' + Math.abs(d).toFixed(1) : '↑' + d.toFixed(1);
-    var td = Math.round((new Date(data.weight[data.weight.length-1].date) - new Date(data.weight[0].date)) / 86400000);
-    items.push({ label: '体重变化', value: f + ' → ' + l + ' 斤', change: ds, sub: td > 0 ? '日均 ' + (Math.abs(d)/td*7).toFixed(2) + ' 斤/周' : '' });
-  }
-  if (data.measurements.length >= 2) {
-    var ms = data.measurements.slice().sort(function(a,b){return a.date.localeCompare(b.date);});
-    var fw = ms[0].waist, lw = ms[ms.length-1].waist;
-    if (fw && lw) { var wd = lw - fw; items.push({ label: '腰围变化', value: fw + ' → ' + lw + ' cm', change: (wd<0?'↓':'↑')+Math.abs(wd).toFixed(1), sub: (wd<0?'减了 ':'涨了 ')+Math.abs(wd).toFixed(1)+' cm' }); }
-  }
+function renderCombined() {
+  var el = document.getElementById('dashCombined');
+  if (data.weight.length < 2) { el.innerHTML = '<div style="display:flex;align-items:center;gap:10px;padding:2px 0;"><div style="font-size:24px;">⚖️</div><div style="font-size:15px;color:var(--text3);">暂无数据，开始记录吧</div></div>'; return; }
+  // Weight header
+  var lastW = data.weight[data.weight.length-1].value;
+  var goalW = data.goals.targetWeight;
+  var html = '<div style="display:flex;align-items:center;gap:10px;padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:6px;">' +
+    '<div style="font-size:28px;">⚖️</div>' +
+    '<div><div style="font-size:20px;font-weight:700;">' + lastW + '<span style="font-size:13px;font-weight:400;color:var(--text2);margin-left:2px;">斤</span></div>' +
+    '<div style="font-size:12px;color:var(--text3);">' + (goalW ? '目标 ' + goalW + ' 斤 · ' + (lastW > goalW ? '还需减 '+(lastW-goalW).toFixed(1) : (lastW < goalW ? '✅ 已达到' : '')) : '未设目标') + '</div></div></div>';
+  // Progress items
+  var f = data.weight[0].value, l = data.weight[data.weight.length-1].value, diff = l - f;
+  var days = Math.round((new Date(data.weight[data.weight.length-1].date) - new Date(data.weight[0].date)) / 86400000);
+  var changeStr = diff < 0 ? '↓' + Math.abs(diff).toFixed(1) : '↑' + diff.toFixed(1);
+  var changeColor = diff < 0 ? 'var(--primary)' : 'var(--warn)';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;">' +
+    '<div style="font-size:13px;">体重变化 <span style="color:var(--text3);font-size:12px;">' + f + ' → ' + l + ' 斤</span></div>' +
+    '<div style="font-size:15px;font-weight:700;color:' + changeColor + '">' + changeStr + '</div></div>';
+  // Body fat
   var bfRecs = data.weight.filter(function(w){return w.note && w.note.indexOf('体脂')>=0;});
   if (bfRecs.length >= 2) {
     var bf1 = parseFloat(bfRecs[0].note.match(/[\d.]+/)), bf2 = parseFloat(bfRecs[bfRecs.length-1].note.match(/[\d.]+/));
-    if (bf1 && bf2) { var bd = bf2 - bf1; items.push({ label: '体脂变化', value: bf1 + '% → ' + bf2 + '%', change: (bd<0?'↓':'↑')+Math.abs(bd).toFixed(1), sub: '' }); }
-  }
-  if (data.exercises.length) {
-    var dts = new Set(data.exercises.map(function(e){return e.date;}));
-    var tDur = data.exercises.reduce(function(s,e){return s+(e.duration||0);},0);
-    var tCal = data.exercises.reduce(function(s,e){return s+(e.calories||0);},0);
-    items.push({ label: '训练总天数', value: dts.size + ' 天', change: '', sub: '总时长 ' + Math.round(tDur/60) + ' 小时 · 消耗 ' + tCal + ' kcal' });
-  }
-  el.innerHTML = items.map(function(item){
-    var c = item.change;
-    var color = c.indexOf('↓')===0 ? 'var(--primary)' : c.indexOf('↑')===0 ? 'var(--warn)' : 'var(--text)';
-    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">' +
-      '<div><div style="font-size:13px;font-weight:500;">' + item.label + '</div>' +
-      '<div style="font-size:12px;color:var(--text3);">' + item.value + (item.sub ? ' · ' + item.sub : '') + '</div></div>' +
-      '<div style="font-size:16px;font-weight:700;color:' + color + '">' + c + '</div></div>';
-  }).join('');
-}
-
-  // Overall assessment
-  var assessEl = document.getElementById('dashAssessment');
-  var assessCard = document.getElementById('dashAssessmentCard');
-  if (data.weight.length >= 2 && assessEl) {
-    var f = data.weight[0].value, l = data.weight[data.weight.length-1].value, d = f - l;
-    var days = Math.round((new Date(data.weight[data.weight.length-1].date) - new Date(data.weight[0].date)) / 86400000);
-    var weeks = Math.max(1, days / 7);
-    var wl = (d / weeks).toFixed(1);
-    var bfRecs2 = data.weight.filter(function(w){return w.note && w.note.indexOf('体脂')>=0;});
-    var bfChange = '';
-    if (bfRecs2.length >= 2) {
-      var b1 = parseFloat(bfRecs2[0].note.match(/[\d.]+/)), b2 = parseFloat(bfRecs2[bfRecs2.length-1].note.match(/[\d.]+/));
-      if (b1 && b2) bfChange = (b1 - b2).toFixed(1);
+    if (bf1 && bf2) {
+      var bd = bf2 - bf1, bds = bd < 0 ? '↓' + Math.abs(bd).toFixed(1) : '↑' + Math.abs(bd).toFixed(1);
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;">' +
+        '<div style="font-size:13px;">体脂变化 <span style="color:var(--text3);font-size:12px;">' + bf1 + '% → ' + bf2 + '%</span></div>' +
+        '<div style="font-size:15px;font-weight:700;color:var(--primary);">' + bds + '</div></div>';
     }
-    var msg = '';
-    if (wl >= 1.5) msg = '🏆 训练效果优秀！' + days + '天减重' + d.toFixed(1) + '斤（均每周' + wl + '斤），腰围减少' + (data.measurements.length >= 2 ? Math.abs(data.measurements[data.measurements.length-1].waist - data.measurements[0].waist).toFixed(1) + 'cm，' : '') + '体脂从' + bfRecs2[0].note.replace('体脂','') + '降至' + bfRecs2[bfRecs2.length-1].note.replace('体脂','') + '。训练节奏稳定，力量持续增长，减脂效果显著！建议继续控制饮酒频率以进一步突破。';
-    else if (wl >= 0.8) msg = '👍 减脂效果良好！' + days + '天减重' + d.toFixed(1) + '斤，节奏稳定。建议坚持当前训练计划，注意饮食管理。';
-    else msg = '💪 继续加油！' + days + '天减重' + d.toFixed(1) + '斤，坚持训练就会有收获。';
-    assessEl.innerHTML = msg;
-    assessCard.style.display = 'block';
-  } else if (assessCard) {
-    assessCard.style.display = 'none';
   }
+  // Assessment
+  var totalLoss = f - l;
+  var weeks = Math.max(1, days / 7);
+  var wl = (totalLoss / weeks).toFixed(1);
+  var msg = '';
+  if (wl >= 1.5) msg = '🏆 训练效果优秀！' + days + '天减重' + totalLoss.toFixed(1) + '斤，均每周' + wl + '斤';
+  else if (wl >= 0.8) msg = '👍 减脂效果良好！' + days + '天减重' + totalLoss.toFixed(1) + '斤，节奏稳定';
+  else msg = '💪 继续加油！' + days + '天减重' + totalLoss.toFixed(1) + '斤，坚持训练';
+  html += '<div style="font-size:12px;color:var(--text2);padding-top:4px;border-top:1px solid var(--border);margin-top:4px;">' + msg + '</div>';
+  el.innerHTML = html;
+}
 
 // ============ WEIGHT ============
 function renderWeight() {
@@ -990,6 +937,7 @@ function renderMore() {
   document.getElementById('goalWeight').value = data.goals.targetWeight || '';
   document.getElementById('goalCalories').value = data.goals.dailyCalories || '';
   document.getElementById('goalExercise').value = data.goals.weeklyExercise || '';
+  document.getElementById('goalDirection').value = data.goals.direction || '减脂';
 }
 function renderMeasurements() {
   const el = document.getElementById('measureList');
@@ -1044,6 +992,7 @@ function saveGoal() {
   data.goals.targetWeight = parseFloat(document.getElementById('goalWeight').value) || '';
   data.goals.dailyCalories = parseInt(document.getElementById('goalCalories').value) || '';
   data.goals.weeklyExercise = parseInt(document.getElementById('goalExercise').value) || '';
+  data.goals.direction = document.getElementById('goalDirection').value;
   saveData();
   showToast('✅ 目标已保存');
   renderDashboard();
@@ -1082,7 +1031,204 @@ function clearAllData() {
 }
 function renderAll() {
   renderDashboard(); if (currentTab === 1) renderWeight(); if (currentTab === 2) renderDiet();
-  if (currentTab === 3) renderExercise(); if (currentTab === 4) renderMore();
+  if (currentTab === 3) renderExercise(); if (currentTab === 4) renderMore(); if (currentTab === 5) renderRecipe();
+}
+
+// ============ RECIPE DATA ============
+const RECIPES = [
+  {id:1,name:'全麦鸡蛋三明治',type:'breakfast',calories:350,protein:20,carbs:40,fat:10,ingredients:['全麦面包2片','鸡蛋1个','生菜2片','番茄3片'],steps:'鸡蛋煮熟压碎，夹入面包中，加生菜番茄即可。',tag:'减脂'},
+  {id:2,name:'燕麦牛奶粥',type:'breakfast',calories:320,protein:15,carbs:45,fat:8,ingredients:['燕麦片40g','牛奶250ml','蓝莓30g','坚果碎10g'],steps:'燕麦加牛奶煮5分钟，撒上蓝莓和坚果碎。',tag:'减脂'},
+  {id:3,name:'紫薯鸡蛋卷',type:'breakfast',calories:280,protein:18,carbs:35,fat:6,ingredients:['紫薯100g','鸡蛋2个','面粉20g','少许盐'],steps:'紫薯蒸熟压泥，鸡蛋加面粉摊成饼，抹紫薯泥卷起切段。',tag:'减脂'},
+  {id:4,name:'蔬菜豆腐饼',type:'breakfast',calories:250,protein:16,carbs:25,fat:8,ingredients:['豆腐150g','胡萝卜30g','西兰花30g','面粉30g'],steps:'豆腐压碎，蔬菜切碎，混合面粉煎至两面金黄。',tag:'减脂'},
+  {id:5,name:'鸡丝荞麦面',type:'breakfast',calories:380,protein:28,carbs:45,fat:9,ingredients:['荞麦面80g','鸡胸肉50g','黄瓜丝30g','芝麻酱10g'],steps:'荞麦面煮熟过凉，鸡胸肉撕丝，加黄瓜丝淋芝麻酱。',tag:'增肌'},
+  {id:6,name:'香煎鸡胸肉',type:'lunch',calories:420,protein:40,carbs:40,fat:10,ingredients:['鸡胸肉200g','杂粮饭150g','西兰花100g','橄榄油5g'],steps:'鸡胸肉用盐和黑胡椒腌制15分钟，煎至两面金黄，搭配杂粮饭和焯水西兰花。',tag:'增肌'},
+  {id:7,name:'清蒸鲈鱼',type:'lunch',calories:400,protein:35,carbs:38,fat:10,ingredients:['鲈鱼250g','糙米饭150g','姜丝10g','葱丝10g'],steps:'鲈鱼加姜丝蒸8分钟，淋少许蒸鱼豉油，搭配糙米饭。',tag:'减脂'},
+  {id:8,name:'番茄炒蛋',type:'lunch',calories:380,protein:20,carbs:45,fat:12,ingredients:['番茄2个','鸡蛋2个','糙米饭150g','葱花5g'],steps:'鸡蛋炒散盛出，番茄炒出汁，加鸡蛋拌匀，搭配糙米饭。',tag:'减脂'},
+  {id:9,name:'青椒牛柳',type:'lunch',calories:450,protein:35,carbs:42,fat:12,ingredients:['牛肉150g','青椒100g','藜麦饭150g','蒜末5g'],steps:'牛肉切条腌制，快炒至变色，加青椒翻炒，搭配藜麦饭。',tag:'增肌'},
+  {id:10,name:'蒜蓉西兰花炒虾仁',type:'lunch',calories:390,protein:32,carbs:38,fat:9,ingredients:['虾仁150g','西兰花100g','杂粮饭150g','蒜末10g'],steps:'虾仁焯水，蒜蓉爆香，加西兰花和虾仁翻炒，搭配杂粮饭。',tag:'减脂'},
+  {id:11,name:'卤牛肉荞麦面',type:'lunch',calories:440,protein:35,carbs:48,fat:10,ingredients:['卤牛肉100g','荞麦面100g','青菜50g','卤汁2勺'],steps:'荞麦面煮熟，码上切片卤牛肉和焯水青菜，浇卤汁。',tag:'增肌'},
+  {id:12,name:'香菇滑鸡',type:'lunch',calories:410,protein:30,carbs:42,fat:11,ingredients:['鸡腿肉150g','香菇50g','糙米饭150g','姜片5g'],steps:'鸡腿肉切块腌制，香菇切片，一起蒸15分钟，搭配糙米饭。',tag:'减脂'},
+  {id:13,name:'清炒时蔬煎豆腐',type:'dinner',calories:280,protein:18,carbs:20,fat:12,ingredients:['老豆腐200g','混合蔬菜150g','蒜末5g','生抽5ml'],steps:'豆腐煎至两面金黄，炒蔬菜，加豆腐和调料翻拌均匀。',tag:'减脂'},
+  {id:14,name:'虾仁冬瓜汤',type:'dinner',calories:260,protein:25,carbs:25,fat:5,ingredients:['虾仁100g','冬瓜200g','紫薯100g','姜片3片'],steps:'冬瓜切片煮至透明，加入虾仁煮3分钟，搭配蒸紫薯。',tag:'减脂'},
+  {id:15,name:'凉拌鸡丝玉米',type:'dinner',calories:300,protein:25,carbs:30,fat:7,ingredients:['鸡胸肉100g','玉米1根','黄瓜50g','油醋汁15ml'],steps:'鸡胸肉煮熟撕丝，玉米煮熟切段，加黄瓜丝淋油醋汁。',tag:'减脂'},
+  {id:16,name:'番茄鱼片汤',type:'dinner',calories:250,protein:28,carbs:15,fat:6,ingredients:['鱼片150g','番茄200g','豆腐100g','葱花5g'],steps:'番茄炒出汁，加水煮开，下鱼片和豆腐煮5分钟，撒葱花。',tag:'减脂'},
+  {id:17,name:'蒜蓉蒸茄子瘦肉粥',type:'dinner',calories:290,protein:22,carbs:35,fat:6,ingredients:['茄子200g','瘦肉末50g','大米30g','蒜末10g'],steps:'茄子蒸熟淋蒜蓉酱，瘦肉末加入粥中煮至粘稠。',tag:'减脂'},
+  {id:18,name:'希腊酸奶坚果',type:'snack',calories:180,protein:15,carbs:10,fat:8,ingredients:['希腊酸奶150g','混合坚果20g','蜂蜜5g'],steps:'酸奶装碗，撒坚果碎，淋蜂蜜。',tag:'减脂'},
+  {id:19,name:'蛋白水果奶昔',type:'snack',calories:200,protein:25,carbs:20,fat:3,ingredients:['蛋白粉1勺','香蕉半根','牛奶200ml','蓝莓30g'],steps:'所有材料放入搅拌机打匀即可。',tag:'增肌'},
+  {id:20,name:'水煮蛋黄瓜',type:'snack',calories:150,protein:13,carbs:5,fat:8,ingredients:['鸡蛋2个','黄瓜1根','少许盐'],steps:'鸡蛋煮熟切半，黄瓜切条，撒少许盐。',tag:'减脂'}
+];
+
+let currentRecipeFilter = 'all';
+let currentRecipeTag = 'all';
+
+function renderRecipe() {
+  var filtered = RECIPES;
+  if (currentRecipeFilter !== 'all') filtered = filtered.filter(function(r){return r.type === currentRecipeFilter;});
+  if (currentRecipeTag !== 'all') filtered = filtered.filter(function(r){return r.tag === currentRecipeTag;});
+  // Tag filter buttons
+  var tagEl = document.getElementById('recipeTagFilter');
+  tagEl.innerHTML = ['全部','减脂','增肌'].map(function(t){
+    var active = (t === (currentRecipeTag === 'all' ? '全部' : currentRecipeTag));
+    return '<button class="btn btn-sm ' + (active ? 'btn-primary' : 'btn-outline') + '" onclick="filterRecipeTag(\'' + (t==='全部'?'all':t) + '\')">' + t + '</button>';
+  }).join('');
+  // Type filter active state
+  document.querySelectorAll('#recipeTypeFilter .meal-tab').forEach(function(btn){
+    btn.classList.toggle('active', btn.getAttribute('onclick').includes("'" + currentRecipeFilter + "'"));
+  });
+  // List
+  var el = document.getElementById('recipeList');
+  if (!filtered.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">🥗</div>暂无匹配菜谱</div>';
+    return;
+  }
+  el.innerHTML = filtered.map(function(r){
+    var tagColor = r.tag === '增肌' ? 'var(--info)' : 'var(--primary)';
+    return '<div class="card" style="padding:14px;margin-bottom:10px;">' +
+      '<div class="flex-between"><strong>' + r.name + '</strong>' +
+      '<span style="font-size:12px;color:' + tagColor + ';font-weight:600;">' + r.tag + '</span></div>' +
+      '<div style="font-size:12px;color:var(--text3);margin:4px 0;">' +
+      r.calories + ' kcal · 蛋白质' + r.protein + 'g · 碳水' + r.carbs + 'g · 脂肪' + r.fat + 'g</div>' +
+      '<div style="font-size:12px;color:var(--text2);margin:4px 0;">🛒 ' + r.ingredients.join('、') + '</div>' +
+      '<div style="font-size:12px;color:var(--text3);margin-top:4px;">👨‍🍳 ' + r.steps + '</div>' +
+      '</div>';
+  }).join('');
+}
+
+function filterRecipe(type) {
+  currentRecipeFilter = type;
+  renderRecipe();
+}
+
+function filterRecipeTag(tag) {
+  currentRecipeTag = tag;
+  renderRecipe();
+}
+
+// ============ PPL DETECTION & TRAINING PLAN ============
+function detectLastPPL() {
+  var strengthEx = data.exercises.filter(function(e) { return e.type === '力量训练'; });
+  if (!strengthEx.length) return null;
+  strengthEx.sort(function(a, b) { return b.date.localeCompare(a.date); });
+  var last = strengthEx[0].name || '';
+  if (/(胸|推|肩)/.test(last)) return 'push';
+  if (/(背|拉|引体)/.test(last)) return 'pull';
+  if (/(腿|深蹲|倒蹬|哈克)/.test(last)) return 'legs';
+  return null;
+}
+
+function getNextWorkout() {
+  var last = detectLastPPL();
+  var cycle = ['push', 'pull', 'legs'];
+  var labels = { push: '推胸+肩部训练', pull: '拉背+二头训练', legs: '腿部训练' };
+  if (!last) return { name: labels.push, type: 'push', day: 'Day 1' };
+  var idx = cycle.indexOf(last);
+  var next = cycle[(idx + 1) % 3];
+  return { name: labels[next], type: next, day: 'Day 1' };
+}
+
+let planExpanded = false;
+function togglePlan() { planExpanded = !planExpanded; renderPlan(); }
+
+function getDayPlan(type, direction) {
+  var isGain = direction === '增肌';
+  var plans = {
+    push: {
+      name: '推胸+肩部训练', emoji: '💪', carbs: '中碳',
+      exercises: isGain
+        ? ['杠铃卧推 5组×8-10次', '上斜哑铃推举 4组×10-12次', '肩部推举 4组×10-12次', '哑铃飞鸟 4组×12次', '绳索下拉 4组×12次', '面拉 3组×15次']
+        : ['杠铃卧推 4组×12-15次', '上斜哑铃推举 3组×12-15次', '肩部推举 3组×12-15次', '哑铃飞鸟 3组×15次', '绳索下拉 3组×15次', '面拉 3组×15次'],
+      cardio: isGain ? '' : '🏃 爬坡 20-25分钟'
+    },
+    pull: {
+      name: '拉背+二头训练', emoji: '🏋️', carbs: '中碳',
+      exercises: isGain
+        ? ['引体向上(辅助) 4组×8-10次', '坐姿划船 4组×10-12次', '高位下拉 4组×10-12次', '杠铃弯举 4组×8-10次', '哑铃弯举 3组×10次', '面拉 3组×15次']
+        : ['引体向上(辅助) 3组×12-15次', '坐姿划船 3组×12-15次', '高位下拉 3组×12-15次', '哑铃弯举 3组×12-15次', '面拉 3组×15次'],
+      cardio: isGain ? '' : '🏃 爬坡 20分钟'
+    },
+    legs: {
+      name: '腿部训练', emoji: '🦵', carbs: '高碳',
+      exercises: isGain
+        ? ['杠铃深蹲 5组×8-10次', '倒蹬 4组×10-12次', '腿弯举 4组×10-12次', '腿屈伸 4组×12次', '髋外展 3组×15次', '站姿提踵 4组×15次']
+        : ['杠铃深蹲 4组×12-15次', '倒蹬 3组×12-15次', '腿弯举 3组×12-15次', '腿屈伸 3组×15次', '髋外展 3组×15次'],
+      cardio: isGain ? '' : '🏃 爬坡 25分钟'
+    },
+    rest: {
+      name: '休息日', emoji: '😌', carbs: '低碳',
+      exercises: [], cardio: ''
+    }
+  };
+  return plans[type];
+}
+
+function generatePlan() {
+  var last = detectLastPPL();
+  var cycle = ['push', 'pull', 'legs'];
+  var direction = data.goals.direction || '减脂';
+  var freq = data.goals.weeklyExercise || 3;
+  var startIdx = 0;
+  if (last) startIdx = (cycle.indexOf(last) + 1) % 3;
+  // Pattern based on weekly frequency
+  var pattern;
+  if (freq <= 3) pattern = ['train','rest','train','rest','train'];
+  else if (freq === 4) pattern = ['train','rest','train','train','rest'];
+  else if (freq === 5) pattern = ['train','train','rest','train','train'];
+  else pattern = ['train','train','rest','train','train','rest','train'];
+  var days = [];
+  var ti = 0;
+  for (var i = 0; i < pattern.length; i++) {
+    if (pattern[i] === 'train') {
+      var type = cycle[(startIdx + ti) % 3];
+      var plan = getDayPlan(type, direction);
+      plan.carbs = type === 'legs' ? '高碳' : '中碳';
+      days.push(plan);
+      ti++;
+    } else {
+      days.push(getDayPlan('rest', direction));
+    }
+  }
+  return days;
+}
+
+function renderNextWorkout() {
+  var next = getNextWorkout();
+  var el = document.getElementById('dashNextWorkout');
+  if (!el) return;
+  var direction = data.goals.direction || '减脂';
+  el.innerHTML = '<div style="font-size:15px;font-weight:600;margin-bottom:4px;">下一次训练：<span style="color:var(--primary);">' + next.name + '</span></div>' +
+    '<div style="font-size:13px;color:var(--text3);">当前方向：' + direction + ' · PPL轮转训练</div>';
+}
+
+function renderPlan() {
+  var el = document.getElementById('dashPlan');
+  if (!el) return;
+  var days = generatePlan();
+  if (!planExpanded) {
+    var sum = days[0].emoji + ' ' + days[0].name + ' · ' + days[0].carbs;
+    if (days.length > 1 && days[1].name === '休息日') sum += ' | 明日休息·低碳';
+    el.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:2px 0;" onclick="togglePlan()">' +
+      '<span style="font-size:14px;font-weight:500;">' + sum + '</span>' +
+      '<span style="font-size:12px;color:var(--text3);">展开 ▸</span></div>';
+    return;
+  }
+  el.innerHTML = days.map(function(d, i){
+    var dt = new Date(); dt.setDate(dt.getDate() + i + 1);
+    var dStr = (dt.getMonth()+1) + '/' + dt.getDate();
+    var cColor = d.carbs === '高碳' ? 'var(--primary)' : d.carbs === '中碳' ? 'var(--warn)' : 'var(--text3)';
+    var isRest = d.name === '休息日';
+    return '<div style="padding:' + (isRest ? '6px' : '8px') + ' 0;' + (i < days.length-1 ? 'border-bottom:1px solid var(--border);' : '') + '">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:' + (isRest ? '0' : '4px') + ';">' +
+      '<div style="font-weight:600;font-size:13px;">' + d.emoji + ' ' + d.name + ' <span style="font-weight:400;font-size:11px;color:var(--text3);">' + dStr + '</span></div>' +
+      '<span style="font-size:10px;padding:1px 6px;border-radius:8px;background:var(--bg);color:' + cColor + ';font-weight:600;">' + d.carbs + '</span></div>' +
+      (isRest ? '<div style="font-size:12px;color:var(--text3);">恢复身体 · 控制碳水 · 多吃蔬菜蛋白质</div>' :
+        '<div style="font-size:12px;line-height:1.7;color:var(--text2);">' +
+        d.exercises.map(function(ex){ return '<div>· ' + ex + '</div>'; }).join('') +
+        (d.cardio ? '<div style="color:var(--warn);margin-top:1px;">' + d.cardio + '</div>' : '') +
+        '</div>') +
+      '</div>';
+  }).join('') +
+  '<div style="text-align:center;padding-top:6px;cursor:pointer;" onclick="togglePlan()">' +
+  '<span style="font-size:12px;color:var(--text3);">收起 ▾</span></div>';
 }
 
 // ============ INIT ============

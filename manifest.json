@@ -1,6 +1,6 @@
 {
-  "name": "健身记录",
-  "short_name": "健身记录",
+  "name": "随记",
+  "short_name": "随记",
   "description": "个人健身减脂记录工具",
   "start_url": "index.html",
   "display": "standalone",
