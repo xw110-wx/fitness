@@ -208,6 +208,11 @@ textarea.form-input { resize: vertical; min-height: 60px; }
         <div class="card-title">📊 本周概览</div>
         <div id="dashWeekSummary"></div>
       </div>
+      
+      <div class="card" id="dashAssessmentCard" style="display:none;">
+        <div class="card-title">💡 总体评价</div>
+        <div id="dashAssessment" style="font-size:14px;line-height:1.8;color:var(--text);"></div>
+      </div>
       <div class="card">
         <div class="card-title">⚡ 快捷操作</div>
         <div class="btn-group">
@@ -284,7 +289,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
       <div class="card">
         <div class="card-title">🎯 目标设置</div>
         <div class="form-group">
-          <label class="form-label">目标体重 (kg)</label>
+          <label class="form-label">目标体重 (斤)</label>
           <input class="form-input" type="number" id="goalWeight" step="0.1" onchange="saveGoal()">
         </div>
         <div class="form-row">
@@ -327,8 +332,8 @@ textarea.form-input { resize: vertical; min-height: 60px; }
       <input class="form-input" type="date" id="wDate">
     </div>
     <div class="form-group">
-      <label class="form-label">体重 (kg)</label>
-      <input class="form-input" type="number" id="wValue" step="0.1" placeholder="例如：72.5">
+      <label class="form-label">体重 (斤)</label>
+      <input class="form-input" type="number" id="wValue" step="0.1" placeholder="例如：124">
     </div>
     <div class="form-group">
       <label class="form-label">备注（可选）</label>
@@ -552,8 +557,8 @@ function renderDashboard() {
   document.getElementById('dashStats').innerHTML = `
     <div class="stat-box"><div class="stat-icon">⚖️</div>
       <div class="stat-label">当前体重</div>
-      <div class="stat-value">${lastWeight ? lastWeight + '<span class="stat-unit">kg</span>' : '--'}</div>
-      <div class="stat-sub">${goalW ? `目标 ${goalW} kg · ${lastWeight ? (lastWeight > goalW ? '还需减 '+(lastWeight-goalW).toFixed(1) : '✅ 已达到') : ''}` : '未设目标'}</div>
+      <div class="stat-value">${lastWeight ? lastWeight + '<span class="stat-unit">斤</span>' : '--'}</div>
+      <div class="stat-sub">${goalW ? `目标 ${goalW} 斤 · ${lastWeight ? (lastWeight > goalW ? '还需减 '+(lastWeight-goalW).toFixed(1) : '✅ 已达到') : ''}` : '未设目标'}</div>
     </div>
     <div class="stat-box"><div class="stat-icon">🍚</div>
       <div class="stat-label">今日热量</div>
@@ -605,7 +610,7 @@ function renderOverallProgress() {
     var f = data.weight[0].value, l = data.weight[data.weight.length-1].value, d = l - f;
     var ds = d < 0 ? '↓' + Math.abs(d).toFixed(1) : '↑' + d.toFixed(1);
     var td = Math.round((new Date(data.weight[data.weight.length-1].date) - new Date(data.weight[0].date)) / 86400000);
-    items.push({ label: '体重变化', value: f + ' → ' + l + ' kg', change: ds, sub: td > 0 ? '日均 ' + (Math.abs(d)/td*7).toFixed(2) + ' kg/周' : '' });
+    items.push({ label: '体重变化', value: f + ' → ' + l + ' 斤', change: ds, sub: td > 0 ? '日均 ' + (Math.abs(d)/td*7).toFixed(2) + ' 斤/周' : '' });
   }
   if (data.measurements.length >= 2) {
     var ms = data.measurements.slice().sort(function(a,b){return a.date.localeCompare(b.date);});
@@ -614,7 +619,7 @@ function renderOverallProgress() {
   }
   var bfRecs = data.weight.filter(function(w){return w.note && w.note.indexOf('体脂')>=0;});
   if (bfRecs.length >= 2) {
-    var bf1 = parseFloat(bfRecs[0].note.match(/[d.]+/)), bf2 = parseFloat(bfRecs[bfRecs.length-1].note.match(/[d.]+/));
+    var bf1 = parseFloat(bfRecs[0].note.match(/[\d.]+/)), bf2 = parseFloat(bfRecs[bfRecs.length-1].note.match(/[\d.]+/));
     if (bf1 && bf2) { var bd = bf2 - bf1; items.push({ label: '体脂变化', value: bf1 + '% → ' + bf2 + '%', change: (bd<0?'↓':'↑')+Math.abs(bd).toFixed(1), sub: '' }); }
   }
   if (data.exercises.length) {
@@ -633,6 +638,30 @@ function renderOverallProgress() {
   }).join('');
 }
 
+  // Overall assessment
+  var assessEl = document.getElementById('dashAssessment');
+  var assessCard = document.getElementById('dashAssessmentCard');
+  if (data.weight.length >= 2 && assessEl) {
+    var f = data.weight[0].value, l = data.weight[data.weight.length-1].value, d = f - l;
+    var days = Math.round((new Date(data.weight[data.weight.length-1].date) - new Date(data.weight[0].date)) / 86400000);
+    var weeks = Math.max(1, days / 7);
+    var wl = (d / weeks).toFixed(1);
+    var bfRecs2 = data.weight.filter(function(w){return w.note && w.note.indexOf('体脂')>=0;});
+    var bfChange = '';
+    if (bfRecs2.length >= 2) {
+      var b1 = parseFloat(bfRecs2[0].note.match(/[\d.]+/)), b2 = parseFloat(bfRecs2[bfRecs2.length-1].note.match(/[\d.]+/));
+      if (b1 && b2) bfChange = (b1 - b2).toFixed(1);
+    }
+    var msg = '';
+    if (wl >= 1.5) msg = '🏆 训练效果优秀！' + days + '天减重' + d.toFixed(1) + '斤（均每周' + wl + '斤），腰围减少' + (data.measurements.length >= 2 ? Math.abs(data.measurements[data.measurements.length-1].waist - data.measurements[0].waist).toFixed(1) + 'cm，' : '') + '体脂从' + bfRecs2[0].note.replace('体脂','') + '降至' + bfRecs2[bfRecs2.length-1].note.replace('体脂','') + '。训练节奏稳定，力量持续增长，减脂效果显著！建议继续控制饮酒频率以进一步突破。';
+    else if (wl >= 0.8) msg = '👍 减脂效果良好！' + days + '天减重' + d.toFixed(1) + '斤，节奏稳定。建议坚持当前训练计划，注意饮食管理。';
+    else msg = '💪 继续加油！' + days + '天减重' + d.toFixed(1) + '斤，坚持训练就会有收获。';
+    assessEl.innerHTML = msg;
+    assessCard.style.display = 'block';
+  } else if (assessCard) {
+    assessCard.style.display = 'none';
+  }
+
 // ============ WEIGHT ============
 function renderWeight() {
   renderWeightChart();
@@ -641,12 +670,12 @@ function renderWeight() {
   const sorted = [...data.weight].reverse();
   const stats = data.weight.length >= 2 ? { min: Math.min(...data.weight.map(w=>w.value)), max: Math.max(...data.weight.map(w=>w.value)), first: data.weight[0].value, last: data.weight[data.weight.length-1].value } : null;
   document.getElementById('weightStats').innerHTML = stats
-    ? `共 ${data.weight.length} 条 · 最低 ${stats.min} · 最高 ${stats.max} · 变化 ${(stats.last - stats.first) >= 0 ? '+' : ''}${(stats.last - stats.first).toFixed(1)}`
+    ? `共 ${data.weight.length} 条 · 最低 ${stats.min} 斤 · 最高 ${stats.max} 斤 · 变化 ${(stats.last - stats.first) >= 0 ? '+' : ''}${(stats.last - stats.first).toFixed(1)}`
     : '';
   list.innerHTML = sorted.map(w => `
     <div class="list-item">
       <div class="li-left">
-        <div class="li-title">${w.value} <span style="font-weight:400;font-size:13px;color:var(--text2);">kg</span></div>
+        <div class="li-title">${w.value} <span style="font-weight:400;font-size:13px;color:var(--text2);">斤</span></div>
         <div class="li-sub">${fmtDate(w.date)}${w.note ? ' · '+w.note : ''}</div>
       </div>
       <button class="btn btn-sm btn-outline" onclick="deleteWeight('${w.date}')" style="color:var(--danger);border-color:transparent;">删除</button>
