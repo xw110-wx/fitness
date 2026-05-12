@@ -200,6 +200,10 @@ textarea.form-input { resize: vertical; min-height: 60px; }
     <!-- Page: Dashboard -->
     <div class="tab-page active" id="pageHome">
       <div class="stats-grid" id="dashStats"></div>
+      <div class="card" id="dashProgressCard" style="display:none;">
+        <div class="card-title">📈 整体进度</div>
+        <div id="dashProgress"></div>
+      </div>
       <div class="card">
         <div class="card-title">📊 本周概览</div>
         <div id="dashWeekSummary"></div>
@@ -273,6 +277,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
     <div class="tab-page" id="pageMore">
       <div class="card">
         <div class="card-title">📏 身体维度</div>
+        <div class="chart-wrap" style="height:160px;"><canvas id="waistChart"></canvas></div>
         <button class="btn btn-outline btn-sm" onclick="showModal('measureModal')">+ 记录维度</button>
         <div id="measureList" class="mt-8"></div>
       </div>
@@ -568,6 +573,8 @@ function renderDashboard() {
   `;
   // Week summary
   renderWeekSummary();
+  // Overall progress
+  renderOverallProgress();
 }
 function renderWeekSummary() {
   const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate()-7);
@@ -586,6 +593,44 @@ function renderWeekSummary() {
       总消耗 <strong>${weekExCal}</strong> kcal
     </div>
   `;
+}
+
+function renderOverallProgress() {
+  var card = document.getElementById('dashProgressCard');
+  var el = document.getElementById('dashProgress');
+  if (data.weight.length < 2 && data.measurements.length < 2) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+  var items = [];
+  if (data.weight.length >= 2) {
+    var f = data.weight[0].value, l = data.weight[data.weight.length-1].value, d = l - f;
+    var ds = d < 0 ? '↓' + Math.abs(d).toFixed(1) : '↑' + d.toFixed(1);
+    var td = Math.round((new Date(data.weight[data.weight.length-1].date) - new Date(data.weight[0].date)) / 86400000);
+    items.push({ label: '体重变化', value: f + ' → ' + l + ' kg', change: ds, sub: td > 0 ? '日均 ' + (Math.abs(d)/td*7).toFixed(2) + ' kg/周' : '' });
+  }
+  if (data.measurements.length >= 2) {
+    var ms = data.measurements.slice().sort(function(a,b){return a.date.localeCompare(b.date);});
+    var fw = ms[0].waist, lw = ms[ms.length-1].waist;
+    if (fw && lw) { var wd = lw - fw; items.push({ label: '腰围变化', value: fw + ' → ' + lw + ' cm', change: (wd<0?'↓':'↑')+Math.abs(wd).toFixed(1), sub: (wd<0?'减了 ':'涨了 ')+Math.abs(wd).toFixed(1)+' cm' }); }
+  }
+  var bfRecs = data.weight.filter(function(w){return w.note && w.note.indexOf('体脂')>=0;});
+  if (bfRecs.length >= 2) {
+    var bf1 = parseFloat(bfRecs[0].note.match(/[d.]+/)), bf2 = parseFloat(bfRecs[bfRecs.length-1].note.match(/[d.]+/));
+    if (bf1 && bf2) { var bd = bf2 - bf1; items.push({ label: '体脂变化', value: bf1 + '% → ' + bf2 + '%', change: (bd<0?'↓':'↑')+Math.abs(bd).toFixed(1), sub: '' }); }
+  }
+  if (data.exercises.length) {
+    var dts = new Set(data.exercises.map(function(e){return e.date;}));
+    var tDur = data.exercises.reduce(function(s,e){return s+(e.duration||0);},0);
+    var tCal = data.exercises.reduce(function(s,e){return s+(e.calories||0);},0);
+    items.push({ label: '训练总天数', value: dts.size + ' 天', change: '', sub: '总时长 ' + Math.round(tDur/60) + ' 小时 · 消耗 ' + tCal + ' kcal' });
+  }
+  el.innerHTML = items.map(function(item){
+    var c = item.change;
+    var color = c.indexOf('↓')===0 ? 'var(--primary)' : c.indexOf('↑')===0 ? 'var(--warn)' : 'var(--text)';
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">' +
+      '<div><div style="font-size:13px;font-weight:500;">' + item.label + '</div>' +
+      '<div style="font-size:12px;color:var(--text3);">' + item.value + (item.sub ? ' · ' + item.sub : '') + '</div></div>' +
+      '<div style="font-size:16px;font-weight:700;color:' + color + '">' + c + '</div></div>';
+  }).join('');
 }
 
 // ============ WEIGHT ============
@@ -858,9 +903,60 @@ function deleteEx(idx) {
   });
 }
 
+function renderWaistChart() {
+  var canvas = document.getElementById('waistChart');
+  if (!canvas) return;
+  var rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width || canvas.parentElement.clientWidth || 300;
+  canvas.height = 160;
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height, pad = { top: 15, bottom: 25, left: 35, right: 15 };
+  var cw = W - pad.left - pad.right, ch = H - pad.top - pad.bottom;
+  ctx.clearRect(0, 0, W, H);
+  var pts = data.measurements.slice().sort(function(a,b){return a.date.localeCompare(b.date);}).filter(function(m){return m.waist;});
+  if (pts.length < 2) {
+    ctx.fillStyle = '#94a3b8'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('至少需要 2 条记录', W/2, H/2 + 5);
+    return;
+  }
+  var v = pts.map(function(p){return p.waist;});
+  var min = Math.floor(Math.min.apply(null, v) - 2), max = Math.ceil(Math.max.apply(null, v) + 2);
+  var range = max - min || 1;
+  function x(i) { return pad.left + (i / (pts.length-1)) * cw; }
+  function yy(val) { return pad.top + ch - ((val - min) / range) * ch; }
+  // Grid
+  ctx.strokeStyle = '#f1f5f9'; ctx.lineWidth = 1;
+  for (var i = 0; i <= 3; i++) { var gy = pad.top + (i/3)*ch; ctx.beginPath(); ctx.moveTo(pad.left, gy); ctx.lineTo(W-pad.right, gy); ctx.stroke();
+    ctx.fillStyle = '#94a3b8'; ctx.font = '10px sans-serif'; ctx.textAlign = 'right'; ctx.fillText((max - (i/3)*range).toFixed(0), pad.left-4, gy+3); }
+  // X labels
+  ctx.fillStyle = '#94a3b8'; ctx.font = '9px sans-serif'; ctx.textAlign = 'center';
+  var step = Math.max(1, Math.floor(pts.length / 5));
+  pts.forEach(function(p, i) { if (i % step === 0 || i === pts.length-1) ctx.fillText(p.date.slice(5), x(i), H-3); });
+  // Area
+  ctx.beginPath(); ctx.moveTo(x(0), yy(v[0]));
+  pts.forEach(function(p, i) { ctx.lineTo(x(i), yy(p.waist)); });
+  ctx.lineTo(x(pts.length-1), H-pad.bottom); ctx.lineTo(x(0), H-pad.bottom); ctx.closePath();
+  var grad = ctx.createLinearGradient(0, pad.top, 0, H-pad.bottom);
+  grad.addColorStop(0, 'rgba(59,130,246,.2)'); grad.addColorStop(1, 'rgba(59,130,246,0)');
+  ctx.fillStyle = grad; ctx.fill();
+  // Line
+  ctx.beginPath(); ctx.moveTo(x(0), yy(v[0]));
+  pts.forEach(function(p, i) { ctx.lineTo(x(i), yy(p.waist)); });
+  ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 2.5; ctx.lineJoin = 'round'; ctx.stroke();
+  // Dots
+  pts.forEach(function(p, i) {
+    ctx.beginPath(); ctx.arc(x(i), yy(p.waist), 3.5, 0, Math.PI*2);
+    ctx.fillStyle = '#fff'; ctx.fill();
+    ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#3b82f6'; ctx.font = '9px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(p.waist + 'cm', x(i), yy(p.waist) - 8);
+  });
+}
+
 // ============ MEASUREMENTS ============
 function renderMore() {
   renderMeasurements();
+  renderWaistChart();
   // Load goals
   document.getElementById('goalWeight').value = data.goals.targetWeight || '';
   document.getElementById('goalCalories').value = data.goals.dailyCalories || '';
@@ -969,7 +1065,7 @@ document.getElementById('exDate').value = todayStr();
 document.getElementById('mDate').value = todayStr();
 
 // Weight chart resize
-const resizeObserver = new ResizeObserver(() => { if (currentTab === 1) renderWeightChart(); });
+const resizeObserver = new ResizeObserver(() => { if (currentTab === 1) renderWeightChart(); if (currentTab === 4) renderWaistChart(); });
 resizeObserver.observe(document.querySelector('.chart-wrap'));
 
 // Initial render
